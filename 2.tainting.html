@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Saumeya Katyal - Dev Diary</title>
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <!-- Font Awesome icons (free version)-->
+        <script src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" crossorigin="anonymous"></script>
+        <!-- Google fonts-->
+        <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body>
+        <!-- Navigation-->
+        <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" href="index.html">Saumeya Katyal</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                    Menu
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="about.html">About</a></li>
+                       <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Page Header-->
+        <header class="masthead" style="background-image: url('assets/img/label1.jpg'); height: 250px;">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="post-heading">
+                            <h2>Tainting Nodes</h2>
+                            <h2 class="subheading">When to use Taints and Tolerations in Kubernetes</h2>
+                            <span class="meta">                                
+                                December 2, 2021
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Post Content-->
+        <article class="mb-4">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <h2>What are taints and tolerations?</h2>
+                        <p>Taints and tolerations is a Kuberenetes concept for advanced Pod scheduling. Taints are conditions that are applied on to the nodes such that no unwanted pod can be scheduled on them. The scheduler checks if the pods have tolerations that match the taint on the node, and will only then allow the pod to run on the node. Any pod without the matching taint will be repelled by the node.
+                        </p>
+                        <ol>
+                           <h5> <li>Apply taint on the node</li></h5>
+                            <p>Taints are applied to the nodes in the format <code>&lt;key&gt;=&lt;value&gt;:&lt;effect&gt;</code>, for example to apply taint on a node node1</p>
+                            <p><pre style="background-color: rgb(236, 235, 235); padding: 10px; border-radius: 5px; color: #d63384">kubectl taint nodes node1 key1=value1:NoSchedule</pre></p>
+                            <p>The key and values are user defined strings and can take up any values, the taint effects supports 3 effects - <i>NoSchedule</i>, <i>PreferNoSchedule</i> and <i>NoExecute</i>.</p>
+                            <p>The NoSchedule taint on the node doesn’t allow any pod to schedule on it without the matching toleration, the  PreferNoSchedule is a soft version of NoSchedule in which the scheduler will try not to schedule a pod without a matching taint to run on the node. 
+                                The NoExecute taint effect will evict any pod without the tolerations to run on the node.
+                            </p>
+                            <h5><li>Add toleration to the podSpec of the pod</li></h5>
+                            <p>Taints always work together with tolerations, tolerations are added in the  podSpec and are necessary for pods to schedule, in the following example of a podSpec - 
+                            </p>
+                            <ul>
+                                <li><i>effect</i>, <i>key</i>  and <i>value</i> fields are similar to the ones used in the taint command, </li>
+                                <li>operator can either be <i>Equals</i> or <i>Exists</i>. If the Equals operator is used then value must be specified, Exists operator doesn’t require the value field.</li>
+                                <li><i>tolerationSeconds</i> field specifies the time in seconds that the pod will remain bound to a node after taint is applied
+                                </li>
+                            </ul>
+                            <br>
+                            <pre><code><span class="hljs-attribute">spec</span>: <br><span class="hljs-attribute">  tolerations</span>: <br><span class="hljs-attribute">  - effect</span>: NoSchedule <br><span class="hljs-attribute">    key</span>: key1 <br><span class="hljs-attribute">    operator</span>: Exists <br><span class="hljs-attribute">    effect</span>: NoExecute <br><span class="hljs-attribute">  - key</span>: key2 <br><span class="hljs-attribute">    operator</span>: Equals <br><span class="hljs-attribute">    value</span>: value2 <br><span class="hljs-attribute">    tolerationSeconds</span>: <span class="hljs-number">6000</span></code></pre>
+                              <h5><li>Example Scenario</li></h5>
+                              <p>According to the following figure, <i>Node1</i> is tainted with key <i>key1</i> and 
+                                value <i>value1</i> with effect <i>NoSchedule</i>. The <i>pod1</i> spec has a toleration that matches the taint exactly and hence schedules on the node, however <i>Pod2</i> doesn’t have matching key value and fails to schedule on the pod.</p>
+                                <img class="img-fluid" src="assets/img/taints.jpg" alt="taints" style="margin-top: -30px; margin-bottom: -100px;" />
+                            </ol>
+                            <h3>Use cases of taints and tolerations</h3>
+                            <ol>
+                                <li>Dedicated Nodes - When dedicates nodes are needed to be assigned to a set of users then the nodes can be tainted and labeled so that only pods from the particular team can use the nodes</li>
+                                <li>Nodes with special hardware - Nodes that make use of specialized hardware like GPUs can repel pods that do not make use of those machines, this helps schedule only the pods that need the hardware to run on these nodes</li>
+                                <li>Taint based evictions - The new kubernetes allow per-pod-eviction behavior when there are node problems</li>
+                            </ol>
+                            <h5>Use Case Example</h5>
+                            <p>As explained in the <a href="1.nodeplacement.html" style="color: blue;">blog</a> taints and tolerations enhance the use case by making sure that the infrastructure nodes repel any unwanted pods. So the users can specify only the subscription expempt workloads to schedule on these pods using specific taints on the nodes. </p>
+                    </div>
+                </div>
+            </div>
+        </article>
+        <!-- Footer-->
+        <footer class="border-top">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <ul class="list-inline text-center">
+                            <li class="list-inline-item">
+                                <a href="https://in.linkedin.com/in/saumeya-katyal-7486a432">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="https://www.facebook.com/saumeya.katyal">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-facebook-f fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="https://github.com/saumeya">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="small text-center text-muted fst-italic">Copyright &copy; Saumeya Katyal 2022</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>

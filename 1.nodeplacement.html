@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Saumeya Katyal - Dev Diary</title>
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <!-- Font Awesome icons (free version)-->
+        <script src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" crossorigin="anonymous"></script>
+        <!-- Google fonts-->
+        <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body>
+        <!-- Navigation-->
+        <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" href="index.html">Saumeya Katyal</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                    Menu
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="about.html">About</a></li>
+                       <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Page Header-->
+        <header class="masthead" style="background-image: url('assets/img/nodeselector.jpg'); height: 250px;">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="post-heading">
+                            <h2>NodePlacement in ArgoCD operator</h2>
+                            <h2 class="subheading">Use Case: How to run default Openshift Gitops Control Plane on Infrastructure nodes</h2>
+                            <span class="meta">                                
+                                September 18, 2021
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Post Content-->
+        <article class="mb-4">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <h2>The NodePlacement Property</h2>
+                        <p>The nodePlacement property in the ArgoCD operator allows a user to set a <i>nodeSelector</i> and <i>tolerations</i> in the workloads deployed by the operator. This allows the user to have better control over deciding the location of the workloads and where they run.
+                        </p>
+                        <h3>Importance of NodeSelectors</h3>
+                       <p>Kubernetes gives its users the advantage of automatic scheduling of pods on nodes. It does this by making sure that pods are scheduled on the nodes which have spare resources. In most cases this is much better than any manual effort for selecting nodes. </p>
+                       <p>However there may be scenarios where the user wants the pods to run on certain nodes, it could be when we want the  pods to run on a machine that has certain computation abilities like GPUs or SSDs. We could also want the pods to run on machines that are in the same availability region. In these cases NodeSelectors help us immensely by allowing us to specify the nodes which the pod should select to run on.</p>
+                       <h5>The 2 steps to use NodeSelectors</h5><br>
+                       <ol>
+                           <li>Label the node that needs to be selected</li>
+                           <p><pre style="background-color: rgb(236, 235, 235); padding: 10px; border-radius: 5px; color: #d63384">kubectl label nodes &lt;node-name&gt; &lt;label-key&gt;=&lt;label-value&gt;</pre></p>                          
+                           <li>Add NodeSelector to the podSpec  </li>                           
+                             <br>
+                           <pre style="background-color: rgb(236, 235, 235); padding: 10px; border-radius: 5px;"><code><span class="hljs-symbol">apiVersion:</span> v1 <br><span class="hljs-symbol">kind:</span> Pod <br><span class="hljs-symbol">metadata:</span> <br><span class="hljs-symbol">  name:</span> example-pod <br><span class="hljs-symbol">spec:</span>  <br><span class="hljs-symbol">  nodeSelector:</span> <br><span class="hljs-symbol">    label1:</span> value1 <br></code></pre>
+                        
+                       </ol>
+                       <h3>Importance of Tolerations</h3>
+                       <p>In this <a href="2.tainting.html" style="color: blue;">blog</a> , I explain how to use taints and tolerations for Pod Scheduling. Tolerations allows us to further control where the pods should or should not run.
+                    </p>
+                    <h3>How to use NodePlacement property in ArgoCD</h3>
+                    <p>The ArgoCD resource is a kubernetes Custom Resource. The CRD of ArgoCD allows the configuration of the components on the ArgoCD cluster</p>
+                    <p>To use the nodePlacement property, add the following lines to the ArgoCD manifest file.</p>
+                    <pre><code><span class="hljs-attribute">apiVersion</span>: argoproj.io/v1alpha1 <br><span class="hljs-attribute">kind</span>: ArgoCD <br><span class="hljs-attribute">metadata</span>: <br><span class="hljs-attribute">  name</span>: example-argocd <br><span class="hljs-attribute">  labels</span>: <br><span class="hljs-attribute">    example</span>: nodeplacement-example <br><span class="hljs-attribute">spec</span>: <br><span class="hljs-attribute">  nodePlacement</span>: <br><span class="hljs-attribute">    nodeSelector</span>: <br> <span class="hljs-attribute">     key1</span>: value1 <br><span class="hljs-attribute">    tolerations</span>: <br><span class="hljs-attribute">    - key</span>: key1 <br><span class="hljs-attribute">      operator</span>: Equal <br><span class="hljs-attribute">      value</span>: value1 <br><span class="hljs-attribute">      effect</span>: NoSchedule <br><span class="hljs-attribute">    - key</span>: key1 <br><span class="hljs-attribute">      operator</span>: Equal <br><span class="hljs-attribute">      value</span>: value1 <br><span class="hljs-attribute">      effect</span>: NoExecute <br></code></pre>
+                <br>
+                <h4>How to use taints and tolerations for running Gitops on Infrastructure Nodes</h4>
+                <p>Openshift allows users to run Gitops control plane on Infrastructure nodes, this allows the customer to save cost of the platform as compute cost is not added for these nodes.</p>
+                <ol>
+                    <li>To specify a node as an infrastructure node, label of infra nodes needs to be applied like so, </li>
+                    <pre style="color: #d63384;">oc label node <node-name> node-role.kubernetes.io/infra=""</pre>
+                    <li>Then in the gitopsservice CR, set the toggle <code>runOnInfra: true</code> , this will add the nodeSelectors in all the workloads and they will be scheduled on the Infrastructure Nodes.</li>
+                   <br>
+                    <li>Taints and toleration can optionally be used in the above scenario to enhance the use case. Customers can add taints on their infrastructure nodes to repel any node that shouldn’t be scheduled on these nodes, for example Openshift allows certain subscription components on the Infrastructure nodes to run without compute cost, example - RedHat Openshift Pipeline, RedHat Openshift  Gitops, Openshift Registry etc.</li>
+                    <p>Customers can add taints to allow only pods from these components to run on the Infrastructure Node and repel all the others.</p>
+                        <li>Steps to run gitops plane on Infra nodes with taints and tolerations</li>
+                        <ul>
+                            <li>Add taint on the node</li>
+                            <pre style="color: #d63384;">oc adm taint nodes -l node-role.kubernetes.io/infra 
+                                infra=reserved:NoSchedule infra=reserved:NoExecute</pre>
+                            <li>For Gitops operator add the following in the gitopsservice CR</li>
+                            <pre style="color: #d63384;">oc edit gitopsservice -n openshift-gitops</pre>
+                            <pre><code><span>spec: </span><br><span>  runOnInfra: true</span><br><span>  tolerations:</span><br><span>  - effect: NoSchedule</span><br><span>    key: infra</span><br><span>    value: reserved</span><br><span>  - effect: NoExecute</span><br><span>    key: infra</span><br><span>    value: reserved</span></code></pre>    
+                            <p>After these steps, you can check the openshift console to check if the pods are scheduled correctly</p>    
+                        </ul>
+                </ol>
+            </div>
+                </div>
+            </div>
+        </article>
+        <!-- Footer-->
+        <footer class="border-top">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <ul class="list-inline text-center">
+                            <li class="list-inline-item">
+                                <a href="https://in.linkedin.com/in/saumeya-katyal-7486a432">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="https://www.facebook.com/saumeya.katyal">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-facebook-f fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="https://github.com/saumeya">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="small text-center text-muted fst-italic">Copyright &copy; Saumeya Katyal 2022</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>

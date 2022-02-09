@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Saumeya Katyal - Dev Diary</title>
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <!-- Font Awesome icons (free version)-->
+        <script src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" crossorigin="anonymous"></script>
+        <!-- Google fonts-->
+        <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body>
+        <!-- Navigation-->
+        <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" href="index.html">Saumeya Katyal</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                    Menu
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="about.html">About</a></li>
+                       <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Page Header-->
+        <header class="masthead" style="background-image: url('assets/img/namespace.jpg'); height: 250px;">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="post-heading">
+                            <h2>Admin Namespace Management</h2>
+                            <h2 class="subheading">Create and configure namespaces, quotas and limit ranges using ArgoCD on Openshift Gitops</h2>
+                            <span class="meta">                                
+                                February 8, 2022
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Post Content-->
+        <article class="mb-4">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <h2>Why do admins need this?</h2>
+                        <p>Admins need to create and configure namespaces with resource quotas and limit ranges prior to creating applications on ArgoCD apps. </p>
+                        <p>This blog specifies the steps that the admin can follow to provision namespaces to the dev teams with required configurations in such a way that developer teams can’t override them.</p>
+                        <ol>
+                            <li>Create a Git Repository and save the config files for the namespaces, quotas, limit ranges. For Example - </li>
+                            <ul>
+                                <li>namespace.yaml</li>
+                                <pre><code><span>apiversion: v1</span><br><span>kind: Namespace</span><br><span>metadata:</span><br><span>  name: dev</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "-1"</span><br><span>  label:</span><br><span>    argocd.argoproj.io/managed-by: openshift-gitops</span></code></pre>
+                                <li>resource-quota.yaml</li>
+                                <pre><code><span>apiversion: v1</span><br><span>kind: ResourceQuota</span><br><span>metadata:</span><br><span>  namespace: dev</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "0"</span><br><span>spec:</span><br><span>  hard:</span><br><span>    pods: "10"</span></code></pre>
+                                <li>limit-range.yaml</li>
+                                <pre><code><span>apiversion: v1</span><br><span>kind: LimitRange</span><br><span>metadata:</span><br><span>  namespace: dev</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "0"</span><br><span>spec:</span><br><span>  limits:</span><br><span>  - default:</span><br><span>      cpu: 200m</span><br><span>      memory: 512Mi</span><br><span>    defaultRequest:</span><br><span>      cpu: 100m</span><br><span>      memory: 256Mi</span><br><span>    type: Container</span></code></pre>
+                               
+                            </ul>
+                            <li>Adding sync waves in these yaml files is important, because Namespace needs to be created before the quotas and limit ranges can be applied to them by argocd controller</li>
+                            <li>Login to your Openshift cluster</li>
+                            <li>Grant additional permissions to application controller to allow creation of Resource Quotas and Limit Ranges</li><br>
+                                <ul>
+                                    <li>In order to this, we need to create additional cluster-roles and cluster-rolebindings and apply to the cluster</li><br>
+                                    <li><pre style="color: #d63384;">oc create -f cluster-role.yaml</pre></li>
+                                    <pre><code><span>apiVersion: rbac.authorization.k8s.io/v1</span><br><span>kind: ClusterRole</span><br><span>metadata:</span><br><span>  name: quota-limits-cluster-role</span><br><span>rules:</span><br><span>- apigroups: [""]</span><br><span>  resources: ["resourcequotas", "limitranges"]</span><br><span>  verbs: ["create"]</span></code></pre>
+                                    <br>
+                                    <li><pre style="color: #d63384;">oc create -f cluster-role-binding.yaml</pre></li>
+                                    <pre><code><span>apiVersion: rbac.authorization.k8s.io/v1</span><br><span>kind: ClusterRoleBinding</span><br><span>metadata:</span><br><span>  name: quota-limits-cluster-role-binding</span><br><span>roleRef:</span><br><span>  apiGroup: rbac.authorization.k8s.io</span><br><span>  kind: ClusterRole</span><br><span>  name: quota-limits-cluster-role</span><br><span>subjects:</span><br><span>- kind: ServiceAccount</span><br><span>  name: openshift-gitops-argocd-application-controller</span><br><span>  namespace: openshift-gitops</span></code></pre>
+
+                                </ul>
+                            <li>Create an Argocd application with this Git Repository, refresh and synchronize it. This will now create the namespace and related quotas and limit ranges.</li>
+                        </ol>
+                        <h3>Use Helm templates for resource manifests</h3>
+                        <p>If the administrator has many manifests to maintain for several namespaces, they can alternatively use helm template to parametrize values for namespace and resource-quota and limit ranges configurations. This approach however will require them to create more argocd applications to create and manage these namespaces.
+                        </p>
+                        <ol>
+                            <li>Create a git repository and add the following resource files, under Templates folder in the helm folder structure  - create namespace.yaml, limit-range.yaml and resource-quota.yaml
+                            </li>
+                            <ul>
+                                <li>namespace.yaml</li>
+                                <pre><code><span>apiversion: v1</span><span>kind: Namespace</span><br><span>metadata:</span><br><span>  name: {{ .Values.namespace }}</span><br><span>  labels:</span><br><span>    name: {{ .Values.namespace }}</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "-1"</span></code></pre>
+                                <li>resource-quota.yaml</li>
+                                <pre><code><span>apiversion: v1</span><br><span>kind: ResourceQuota</span><br><span>metadata:</span><br><span>  namespace: {{ .Values.namespace }}</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "0"</span><br><span>spec:</span><br><span>  hard:</span><br><span>    pods: {{ .Values.quota.pods }}
+                                </span></code></pre>
+                               
+                                <li>limit-range.yaml</li>
+                                <pre><code><span>apiversion: v1</span><br><span>kind: LimitRange</span><br><span>metadata:</span><br><span>  namespace: {{ .Values.namespace }}</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "0"</span><br><span>spec:</span><br><span>  limits:</span><br><span>  - default:</span><br><span>      cpu: {{ .Values.limits.default.cpu }}</span><br><span>      memory: {{ .Values.limits.default.memory }}</span><br><span>    defaultRequest:</span><br><span>      cpu: {{ .Values.limits.defaultRequest.cpu }}</span><br><span>      memory: {{ .Values.limits.defaultRequest.memory }}</span><br><span>    type: {{ .Values.limits.type }}</span></code></pre>
+                               
+                                <li>values.yaml</li>
+                                <pre><code><span>namespace: default-dev</span><br><br><span>limits:</span><br><span>  default:</span><br><span>  cpu: 200m</span><br><span>  memory: 512Mi</span><br><span>  defaultRequest:</span><br><span>    cpu: 100m</span><br><span>    memory: 256Mi</span><br><span>  type: Container</span><br><br><span>quota:</span><br><span>  pods: "10"</span></code></pre>
+                            </ul>
+                            <p>These values are default values and the admins can configure their own values using custom value files.</p>
+                            <li>
+                                Grant the additional permissions on your cluster by creating custom roles as before and create an argocd application with this Git Repository.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </article>
+        <!-- Footer-->
+        <footer class="border-top">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <ul class="list-inline text-center">
+                            <li class="list-inline-item">
+                                <a href="https://in.linkedin.com/in/saumeya-katyal-7486a432">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="https://www.facebook.com/saumeya.katyal">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-facebook-f fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="https://github.com/saumeya">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fas fa-circle fa-stack-2x"></i>
+                                        <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="small text-center text-muted fst-italic">Copyright &copy; Saumeya Katyal 2022</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>

@@ -264,6 +264,9 @@ pre {
   margin-bottom: 1rem;
   overflow: auto;
   font-size: 0.875em;
+  background-color: rgb(236, 235, 235); 
+  padding: 10px; 
+  border-radius: 5px;
 }
 pre code {
   font-size: inherit;
