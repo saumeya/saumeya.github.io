@@ -57,6 +57,8 @@
                         <h2>Why do admins need this?</h2>
                         <p>Admins need to create and configure namespaces with resource quotas and limit ranges prior to creating applications on ArgoCD apps. </p>
                         <p>This blog specifies the steps that the admin can follow to provision namespaces to the dev teams with required configurations in such a way that developer teams can’t override them.</p>
+                        
+                        <h4>Approach 1 : Using a single ArgoCD application to mantain namespaces</h3><br>
                         <ol>
                             <li>Create a Git Repository and save the config files for the namespaces, quotas, limit ranges. For Example - </li>
                             <ul>
@@ -82,7 +84,7 @@
                                 </ul>
                             <li>Create an Argocd application with this Git Repository, refresh and synchronize it. This will now create the namespace and related quotas and limit ranges.</li>
                         </ol>
-                        <h3>Use Helm templates for resource manifests</h3>
+                        <h3>Approach 2 : Use Helm templates for resource manifests</h3>
                         <p>If the administrator has many manifests to maintain for several namespaces, they can alternatively use helm template to parametrize values for namespace and resource-quota and limit ranges configurations. This approach however will require them to create more argocd applications to create and manage these namespaces.
                         </p>
                         <ol>
@@ -103,7 +105,7 @@
                             </ul>
                             <p>These values are default values and the admins can configure their own values using custom value files.</p>
                             <li>
-                                Grant the additional permissions on your cluster by creating custom roles as before and create an argocd application with this Git Repository.
+                                Follow steps 4 and 5 from the previous approach to grant additional permissions on your cluster and create an argocd application.
                             </li>
                         </ol>
                     </div>
