@@ -39,11 +39,11 @@
                 <div class="row gx-4 gx-lg-5 justify-content-center">
                     <div class="col-md-10 col-lg-8 col-xl-7">
                         <div class="post-heading">
-                            <h2>Admin Namespace Management</h2>
-                            <h2 class="subheading">Create and configure namespaces, quotas and limit ranges using ArgoCD on Openshift Gitops</h2>
-                            <span class="meta">                                
+                            <h3>Managing namespaces with ArgoCD in multi-tenant clusters</h3>
+                            <h5 class="subheading">Create and configure namespaces, quotas and limit ranges using ArgoCD on Openshift Gitops</h5>
+                            <span class="meta" style="margin-bottom: 10px;">                                
                                 February 8, 2022
-                            </span>
+                            </span>                            
                         </div>
                     </div>
                 </div>
@@ -54,11 +54,21 @@
             <div class="container px-4 px-lg-5">
                 <div class="row gx-4 gx-lg-5 justify-content-center">
                     <div class="col-md-10 col-lg-8 col-xl-7">
-                        <h2>Why do admins need this?</h2>
-                        <p>Admins need to create and configure namespaces with resource quotas and limit ranges prior to creating applications on ArgoCD apps. </p>
-                        <p>This blog specifies the steps that the admin can follow to provision namespaces to the dev teams with required configurations in such a way that developer teams can’t override them.</p>
+                       
+                        <h3>Introduction</h3>
+                        <p>Cluster Administrators need to create namespaces for their developer teams and also provision these namespaces with required Resource Quotas and Limit Ranges. The developer teams own these namespaces and are admins to its contents but they are not allowed to modify the quotas and limits. </p>
+                         <p>This blog is intended to document the ways in which the creation, configurations and management of multiple namespaces can be simplified by using ArgoCD.</p> 
+                        <h4>Resource Quotas</h4>
+                        <p>Resource Quota is a Kubernetes object that allows users to control or limit the CPU or memory consumed within a namespace. These quotas can also be used to limit the numbers of resources that can be created in a namespace.</p>
+                        <h4>Limit Ranges</h4>
+                        <p>Resource Quota is a Kubernetes object that allows users to control or limit the CPU or memory consumed within a namespace. These quotas can also be used to limit the numbers of resources that can be created in a namespace.</p>
                         
-                        <h4>Approach 1 : Using a single ArgoCD application to mantain namespaces</h3><br>
+                         <h3>Creation of a Namespace Management Application using ArgoCD</h3>
+                         <p>ArgoCD is a powerful continuous delivery tool for Kubernetes resources. Namespaces and quotas are Kubernetes resources, hence we can leverage ArgoCD to create and manage them. ArgoCD also supports using Kustomize and Helm Charts for creating applications.</p>
+                         <p>This section will first document the steps for creating a simple ArgoCD application from a Git Repository. Following that, 2 more better alternative ways of creating the application using Kustomize and Helm will be discussed.
+                        </p>
+                        <h4>1. Simple ArgoCD Application using Git Repository 
+                        </h4>
                         <ol>
                             <li>Create a Git Repository and save the config files for the namespaces, quotas, limit ranges. For Example - </li>
                             <ul>
@@ -71,8 +81,8 @@
                                
                             </ul>
                             <li>Adding sync waves in these yaml files is important, because Namespace needs to be created before the quotas and limit ranges can be applied to them by argocd controller</li>
-                            <li>Login to your Openshift cluster</li>
-                            <li>Grant additional permissions to application controller to allow creation of Resource Quotas and Limit Ranges</li><br>
+                            <li>Login to your Openshift cluster as administrator</li>
+                            <li>The argoCD application controller needs additional permissions to create Resource Quotas and Limit Ranges in the cluster namespaces. Openshift Cluster Roles and Role Bindings need to be used to grant additional permissions to application controller of the default argocd instance in the openshift-gitops namespace to allow creation of Resource Quotas and Limit Ranges</li><br>
                                 <ul>
                                     <li>In order to this, we need to create additional cluster-roles and cluster-rolebindings and apply to the cluster</li><br>
                                     <li><pre style="color: #d63384;">oc create -f cluster-role.yaml</pre></li>
@@ -84,12 +94,22 @@
                                 </ul>
                             <li>Create an Argocd application with this Git Repository, refresh and synchronize it. This will now create the namespace and related quotas and limit ranges.</li>
                         </ol>
-                        <h3>Approach 2 : Use Helm templates for resource manifests</h3>
-                        <p>If the administrator has many manifests to maintain for several namespaces, they can alternatively use helm template to parametrize values for namespace and resource-quota and limit ranges configurations. This approach however will require them to create more argocd applications to create and manage these namespaces.
-                        </p>
+                        <h4>Limitation</h4>
+                        <p>Keeping individual manifests for each team will make managing these config files a tedious task, especially when there are a large number of teams and projects. Hence, better approaches that make use of template tools like Kustomize and Helm are discussed in the following sections.</p>
+                        <h3>2. Use Kustomize to create and manage resources</h3>
+                        <ol>
+                            <li>By using custom patches in Kustomize we can avoid creating multiple manifests and reuse common elements from resource quotas and limit ranges. See example repository - https://github.com/saumeya/blog-example-repo/tree/main/kustomize-namespace-config/teams
+                            </li>
+                            <li>The teams folder defines all the patches for different teams onto the base manifests. On creating the argoCD application all these resources are created.
+                            </li>
+                            <li>Follow the last three steps (3, 4 and 5) from the previous section to grant additional permissions and create ArgoCD applications to manage your namespaces.</li>
+                        </ol>
+                        <h3>3. Use Helm and Application Set to create and manage resources </h3>
+                        <p>Helm templates can also be used to parametrize values for namespace, resource quotas and limit ranges configurations. This will however, require you to create more ArgoCD applications to manage these namespaces. To avoid creating the multiple applications one by one, Application Sets can be leveraged to specify the value files and create all the applications in one go. </p>
                         <ol>
                             <li>Create a git repository and add the following resource files, under Templates folder in the helm folder structure  - create namespace.yaml, limit-range.yaml and resource-quota.yaml
                             </li>
+                
                             <ul>
                                 <li>namespace.yaml</li>
                                 <pre><code><span>apiversion: v1</span><span>kind: Namespace</span><br><span>metadata:</span><br><span>  name: {{ .Values.namespace }}</span><br><span>  labels:</span><br><span>    name: {{ .Values.namespace }}</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "-1"</span></code></pre>
@@ -99,15 +119,21 @@
                                
                                 <li>limit-range.yaml</li>
                                 <pre><code><span>apiversion: v1</span><br><span>kind: LimitRange</span><br><span>metadata:</span><br><span>  namespace: {{ .Values.namespace }}</span><br><span>  annotations:</span><br><span>    argocd.argoproj.io/sync-wave: "0"</span><br><span>spec:</span><br><span>  limits:</span><br><span>  - default:</span><br><span>      cpu: {{ .Values.limits.default.cpu }}</span><br><span>      memory: {{ .Values.limits.default.memory }}</span><br><span>    defaultRequest:</span><br><span>      cpu: {{ .Values.limits.defaultRequest.cpu }}</span><br><span>      memory: {{ .Values.limits.defaultRequest.memory }}</span><br><span>    type: {{ .Values.limits.type }}</span></code></pre>
-                               
+                                <p>These values are default values and the admins can configure their own values using custom value files.</p>
+                           
                                 <li>values.yaml</li>
                                 <pre><code><span>namespace: default-dev</span><br><br><span>limits:</span><br><span>  default:</span><br><span>  cpu: 200m</span><br><span>  memory: 512Mi</span><br><span>  defaultRequest:</span><br><span>    cpu: 100m</span><br><span>    memory: 256Mi</span><br><span>  type: Container</span><br><br><span>quota:</span><br><span>  pods: "10"</span></code></pre>
                             </ul>
-                            <p>These values are default values and the admins can configure their own values using custom value files.</p>
+                            <li>Application Sets can be used to create multiple applications for namespace creation for different fields. Check the example repo for the teams folder and add relative path of the custom value files in the list generator, this will create the namespace app for specific teams. Apply the following Application Set config to your cluster.</li>
                             <li>
                                 Follow steps 4 and 5 from the previous approach to grant additional permissions on your cluster and create an argocd application.
                             </li>
+                            <li>Follow the last three steps (3, 4 and  5) from the first approach to grant additional permissions and create ArgoCD applications to manage your namespaces. 
+                                More information about how to create applications using Helm can be found here.</li>
                         </ol>
+                        <h3>Conclusion</h3>
+                        <p>This blog documents the ways in which ArgoCD can be used to  simplify the process of creating, managing and configuring namespaces. Anytime a change is required in the quotas or limits, the admins need to simply modify the config files and ArgoCD will do the rest of the work for them.
+                            </p>
                     </div>
                 </div>
             </div>
