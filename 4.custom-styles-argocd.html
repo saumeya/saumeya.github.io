@@ -64,7 +64,7 @@
                            <li>First create a css file and add your style corresponding to the styles in <a style="color: rgb(5, 5, 158); text-decoration: underline;" href="https://github.com/argoproj/argo-ui">argo-ui repository.</a></li>
                            <p>I have created a sample css for you too look at, this by no means is complete and is only for demonstration purposes. <a style="color: rgb(5, 5, 158)" href="https://saumeya.github.io/argo-custom-style/style.css">Link to style.css</a></p>                          
                            <p>To update the logo of argocd, in your css can add:</p>
-                           <pre style="background-color: rgb(236, 235, 235); padding: 10px; border-radius: 5px;"><code><span >.sidebar-bar__logo img {</span> <br><span >  content: url(https://your-logo.png);</span><br><span>}</span></code></pre>
+                           <pre style="background-color: rgb(236, 235, 235); padding: 10px; border-radius: 5px;"><code><span >.sidebar__logo img {</span> <br><span >  content: url(https://your-logo.png);</span><br><span>}</span></code></pre>
                            <li>Add CSS file link to argocd config-map  </li>   
                            <pre style="color: #d63384;">kubectl edit configmap -n argocd argocd-cm -o yaml</pre>
                             <p>And then add to data field: </p>
